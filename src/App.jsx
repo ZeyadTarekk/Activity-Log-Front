@@ -9,6 +9,7 @@ const fetcher = (url) => fetch(url).then((res) => res.json());
 const App = () => {
   const [query, setQuery] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
+  const [filters, setFilters] = useState({});
   const [expandedItem, setExpandedItem] = useState(null);
   const [data, setData] = useState([]);
   const [skip, setSkip] = useState(0);
@@ -16,11 +17,24 @@ const App = () => {
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [hasMoreData, setHasMoreData] = useState(true);
 
-  const endpoint = searchTerm
-    ? `https://activitylog-zeyad.azurewebsites.net/events?name=${encodeURIComponent(
-        searchTerm
-      )}&skip=${skip}&take=${take}`
-    : `https://activitylog-zeyad.azurewebsites.net/events?skip=${skip}&take=${take}`;
+  const buildEndpoint = () => {
+    let url = `https://activitylog-zeyad.azurewebsites.net/events?skip=${skip}&take=${take}`;
+    if (searchTerm) {
+      url += `&name=${encodeURIComponent(searchTerm)}`;
+    }
+    if (filters.actorId) {
+      url += `&actorId=${encodeURIComponent(filters.actorId)}`;
+    }
+    if (filters.targetId) {
+      url += `&targetId=${encodeURIComponent(filters.targetId)}`;
+    }
+    if (filters.actionId) {
+      url += `&actionId=${encodeURIComponent(filters.actionId)}`;
+    }
+    return url;
+  };
+
+  const endpoint = buildEndpoint();
 
   const { data: fetchedData, error } = useSWR(endpoint, fetcher, {
     revalidateOnFocus: false,
@@ -42,6 +56,13 @@ const App = () => {
     setHasMoreData(true);
     setSearchTerm(query);
   }, [query]);
+
+  const handleApplyFilter = useCallback((newFilters) => {
+    setData([]);
+    setSkip(0);
+    setHasMoreData(true);
+    setFilters(newFilters);
+  }, []);
 
   const handleLoadMore = async () => {
     setIsLoadingMore(true);
@@ -152,6 +173,7 @@ const App = () => {
             setQuery={setQuery}
             onSearch={handleSearch}
             onExport={handleExport}
+            onApplyFilter={handleApplyFilter}
           />
           <div className="overflow-y-auto max-h-[65vh] flex-grow overflow-auto">
             <table className="min-w-full bg-white border-collapse">
