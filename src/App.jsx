@@ -1,10 +1,11 @@
 import React, { useState, useCallback } from "react";
+import useSWR from "swr";
 import SearchBar from "./components/SearchBar";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faChevronRight } from "@fortawesome/free-solid-svg-icons";
-import useSWR from "swr";
 
 const fetcher = (url) => fetch(url).then((res) => res.json());
+
 const App = () => {
   const [query, setQuery] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
@@ -48,6 +49,7 @@ const App = () => {
     };
     return date.toLocaleString("en-US", options);
   };
+
   const handleLoadMore = () => {
     // Logic to load more items
   };
@@ -55,6 +57,70 @@ const App = () => {
   const handleRowClick = (item) => {
     setExpandedItem(expandedItem?.id === item.id ? null : item);
   };
+
+  const handleExport = () => {
+    if (data && data.length > 0) {
+      const csvData = data.map((item) => ({
+        ActorName: item.actorName,
+        ActorEmail: item.actorName,
+        ActorId: item.actorId,
+        ActionName: item.action.name,
+        ActionObject: item.action.object,
+        ActionId: item.action.id,
+        OccurredAt: item.occurredAt,
+        Redirect: item.metadata.redirect,
+        Description: item.metadata.description,
+        RequestId: item.metadata.x_request_id,
+        TargetName: item.targetName,
+        TargetId: item.targetId,
+      }));
+
+      const csvContent = [
+        [
+          "Actor Name",
+          "Actor Email",
+          "Actor ID",
+          "Action Name",
+          "Action Object",
+          "Action ID",
+          "Occurred At",
+          "Redirect",
+          "Description",
+          "Request Id",
+          "Target Name",
+          "Target Id",
+        ],
+        ...csvData.map((item) => [
+          item.ActorName,
+          item.ActorEmail,
+          item.ActorId,
+          item.ActionName,
+          item.ActionObject,
+          item.ActionId,
+          item.OccurredAt,
+          item.Redirect,
+          item.Description,
+          item.RequestId,
+          item.TargetName,
+          item.TargetId,
+        ]),
+      ]
+        .map((row) => row.join(","))
+        .join("\n");
+
+      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.setAttribute("href", url);
+      link.setAttribute("download", "data_export.csv");
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } else {
+      alert("No data to export");
+    }
+  };
+
   if (data)
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-white p-4">
@@ -63,6 +129,7 @@ const App = () => {
             query={query}
             setQuery={setQuery}
             onSearch={handleSearch}
+            onExport={handleExport}
           />
           <div className="overflow-y-auto max-h-[65vh] flex-grow overflow-auto">
             <table className="min-w-full bg-white border-collapse">
