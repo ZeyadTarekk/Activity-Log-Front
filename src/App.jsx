@@ -454,13 +454,15 @@ const App = () => {
               </tbody>
             </table>
           </div>
-          <button
-            onClick={handleLoadMore}
-            className="w-full py-3 mt-2 bg-custom-gray-light text-gray-800 font-semibold rounded-b-lg border-t hover:bg-gray-300"
-            disabled={isLoadingMore}
-          >
-            {isLoadingMore ? "Loading..." : "Load More"}
-          </button>
+          {hasMoreData && (
+            <button
+              onClick={handleLoadMore}
+              className="w-full py-3 mt-2 bg-custom-gray-light text-gray-800 font-semibold rounded-b-lg border-t hover:bg-gray-300"
+              disabled={isLoadingMore}
+            >
+              {isLoadingMore ? "Loading..." : "Load More"}
+            </button>
+          )}
         </div>
       </div>
     );
