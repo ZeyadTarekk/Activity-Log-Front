@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useEffect } from "react";
 import useSWR from "swr";
 import SearchBar from "./components/SearchBar";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
@@ -10,18 +10,44 @@ const App = () => {
   const [query, setQuery] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
   const [expandedItem, setExpandedItem] = useState(null);
+  const [data, setData] = useState([]);
+  const [skip, setSkip] = useState(0);
+  const take = 5;
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [hasMoreData, setHasMoreData] = useState(true);
 
   const endpoint = searchTerm
     ? `https://activitylog-zeyad.azurewebsites.net/events?name=${encodeURIComponent(
         searchTerm
-      )}`
-    : "https://activitylog-zeyad.azurewebsites.net/events";
+      )}&skip=${skip}&take=${take}`
+    : `https://activitylog-zeyad.azurewebsites.net/events?skip=${skip}&take=${take}`;
 
-  const { data, error } = useSWR(endpoint, fetcher);
+  const { data: fetchedData, error } = useSWR(endpoint, fetcher, {
+    revalidateOnFocus: false,
+    revalidateOnReconnect: false,
+  });
+
+  useEffect(() => {
+    if (fetchedData) {
+      if (fetchedData.length < take) {
+        setHasMoreData(false);
+      }
+      setData((prevData) => [...prevData, ...fetchedData]);
+    }
+  }, [fetchedData]);
 
   const handleSearch = useCallback(() => {
+    setData([]);
+    setSkip(0);
+    setHasMoreData(true);
     setSearchTerm(query);
   }, [query]);
+
+  const handleLoadMore = async () => {
+    setIsLoadingMore(true);
+    setSkip((prevSkip) => prevSkip + take);
+    setIsLoadingMore(false);
+  };
 
   if (error) {
     return (
@@ -48,10 +74,6 @@ const App = () => {
       hour12: true,
     };
     return date.toLocaleString("en-US", options);
-  };
-
-  const handleLoadMore = () => {
-    // Logic to load more items
   };
 
   const handleRowClick = (item) => {
@@ -413,28 +435,31 @@ const App = () => {
                     )}
                   </React.Fragment>
                 ))}
-                <tr className="bg-white cursor-pointer">
-                  <td className="py-3 px-4 flex items-center">
-                    <div className="rounded-full bg-slate-200 h-7 w-7"></div>
-                    <div className="ml-3 w-full">
-                      <div className="h-2 bg-slate-200 rounded w-3/4"></div>
-                    </div>
-                  </td>
-                  <td className="py-3 px-4 text-custom-black">
-                    <div className="h-2 bg-slate-200 rounded w-full"></div>
-                  </td>
-                  <td className="py-3 px-4 text-custom-black">
-                    <div className="h-2 bg-slate-200 rounded w-full"></div>
-                  </td>
-                </tr>
+                {hasMoreData && (
+                  <tr className="bg-white cursor-pointer">
+                    <td className="py-3 px-4 flex items-center">
+                      <div className="rounded-full bg-slate-200 h-7 w-7"></div>
+                      <div className="ml-3 w-full">
+                        <div className="h-2 bg-slate-200 rounded w-3/4"></div>
+                      </div>
+                    </td>
+                    <td className="py-3 px-4 text-custom-black">
+                      <div className="h-2 bg-slate-200 rounded w-full"></div>
+                    </td>
+                    <td className="py-3 px-4 text-custom-black">
+                      <div className="h-2 bg-slate-200 rounded w-full"></div>
+                    </td>
+                  </tr>
+                )}
               </tbody>
             </table>
           </div>
           <button
             onClick={handleLoadMore}
             className="w-full py-3 mt-2 bg-custom-gray-light text-gray-800 font-semibold rounded-b-lg border-t hover:bg-gray-300"
+            disabled={isLoadingMore}
           >
-            Load More
+            {isLoadingMore ? "Loading..." : "Load More"}
           </button>
         </div>
       </div>
