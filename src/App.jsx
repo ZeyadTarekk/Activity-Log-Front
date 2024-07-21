@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useCallback } from "react";
 import SearchBar from "./components/SearchBar";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faChevronRight } from "@fortawesome/free-solid-svg-icons";
@@ -7,11 +7,20 @@ import useSWR from "swr";
 const fetcher = (url) => fetch(url).then((res) => res.json());
 const App = () => {
   const [query, setQuery] = useState("");
+  const [searchTerm, setSearchTerm] = useState("");
   const [expandedItem, setExpandedItem] = useState(null);
 
-  const endpoint = "https://activitylog-zeyad.azurewebsites.net/events";
+  const endpoint = searchTerm
+    ? `https://activitylog-zeyad.azurewebsites.net/events?name=${encodeURIComponent(
+        searchTerm
+      )}`
+    : "https://activitylog-zeyad.azurewebsites.net/events";
 
   const { data, error } = useSWR(endpoint, fetcher);
+
+  const handleSearch = useCallback(() => {
+    setSearchTerm(query);
+  }, [query]);
 
   if (error) {
     return (
@@ -53,6 +62,7 @@ const App = () => {
           <SearchBar
             query={query}
             setQuery={setQuery}
+            onSearch={handleSearch}
           />
           <div className="overflow-y-auto max-h-[65vh] flex-grow overflow-auto">
             <table className="min-w-full bg-white border-collapse">
